@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Formless Capital</title>
+    <meta
+      name="description"
+      content="Formless Capital backs founders building the infrastructure and applications that will define the next era of digital finance."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62.5..125,300;62.5..125,500;62.5..125,700&family=Fraunces:opsz,wght@9..144,300;9..144,600;9..144,800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      const { useEffect, useRef, useState } = React;
+
+      const ParticleCubeBackground = () => {
+        const canvasRef = useRef(null);
+        const frameRef = useRef(null);
+        const rendererRef = useRef(null);
+        const sceneRef = useRef(null);
+        const cameraRef = useRef(null);
+        const meshRef = useRef(null);
+        const dataRef = useRef(null);
+        const scrollRef = useRef(0);
+        const hasScrolledRef = useRef(false);
+        const [phase, setPhase] = useState("I — Formation");
+        const [progress, setProgress] = useState(0);
+
+        useEffect(() => {
+          if (!canvasRef.current || !window.THREE) {
+            return undefined;
+          }
+
+          const THREE = window.THREE;
+          const canvas = canvasRef.current;
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+          const init = () => {
+            const N = 8;
+            const CUBE_SIZE = 3.0;
+            const total = N * N * N;
+            const half = CUBE_SIZE / 2;
+            const step = CUBE_SIZE / (N - 1);
+            const BLOCK = step * 0.44;
+
+            const C = {
+              core: new THREE.Color(0x9fd3ff),
+              dark: new THREE.Color(0x3a6fb3),
+            };
+
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setClearColor(0x000000, 0);
+            rendererRef.current = renderer;
+
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(new THREE.Color(0xf7f6f2), 8, 22);
+            sceneRef.current = scene;
+
+            const camera = new THREE.PerspectiveCamera(
+              42,
+              canvas.clientWidth / canvas.clientHeight,
+              0.1,
+              100
+            );
+            camera.position.set(0, 0.4, 9.2);
+            cameraRef.current = camera;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const key = new THREE.DirectionalLight(0xffffff, 0.9);
+            key.position.set(5, 8, 6);
+            scene.add(key);
+            const fill = new THREE.DirectionalLight(0xbad3ff, 0.3);
+            fill.position.set(-4, -2, 3);
+            scene.add(fill);
+            const rim = new THREE.DirectionalLight(0xd4e2ff, 0.25);
+            rim.position.set(0, 3, -5);
+            scene.add(rim);
+
+            const geo = new THREE.BoxGeometry(BLOCK * 2, BLOCK * 2, BLOCK * 2);
+            const mat = new THREE.MeshPhysicalMaterial({
+              color: C.core,
+              roughness: 0.06,
+              metalness: 0.0,
+              transmission: 0.95,
+              opacity: 0.5,
+              transparent: true,
+              ior: 1.22,
+              thickness: 1.2,
+              clearcoat: 1.0,
+              clearcoatRoughness: 0.05,
+              attenuationColor: C.core,
+              attenuationDistance: 1.5,
+            });
+            const mesh = new THREE.InstancedMesh(geo, mat, total);
+            mesh.position.set(2.2, 0.6, 0);
+            scene.add(mesh);
+            meshRef.current = mesh;
+
+            const base = new Float32Array(total * 3);
+            const ns = new Float32Array(total * 3);
+            const vel = new Float32Array(total * 3);
+            const dist = new Float32Array(total);
+            const cols = new Float32Array(total * 3);
+
+            let idx = 0;
+            for (let ix = 0; ix < N; ix++) {
+              for (let iy = 0; iy < N; iy++) {
+                for (let iz = 0; iz < N; iz++) {
+                  const i3 = idx * 3;
+                  base[i3] = -half + ix * step;
+                  base[i3 + 1] = -half + iy * step;
+                  base[i3 + 2] = -half + iz * step;
+                  ns[i3] = Math.random() * 100;
+                  ns[i3 + 1] = Math.random() * 100;
+                  ns[i3 + 2] = Math.random() * 100;
+                  dist[idx] = Math.sqrt(
+                    base[i3] ** 2 + base[i3 + 1] ** 2 + base[i3 + 2] ** 2
+                  );
+
+                  const len = dist[idx] + 0.01;
+                  const dirX = base[i3] / len;
+                  const dirY = base[i3 + 1] / len;
+                  const dirZ = base[i3 + 2] / len;
+                  const spread = 0.4;
+                  const spd = 0.8 + Math.random() * 2.0;
+                  vel[i3] = (dirX + (Math.random() - 0.5) * spread) * spd;
+                  vel[i3 + 1] = (dirY + (Math.random() - 0.5) * spread) * spd;
+                  vel[i3 + 2] = (dirZ + (Math.random() - 0.5) * spread) * spd;
+
+                  idx++;
+                }
+              }
+            }
+
+            const maxD = Math.max(...dist);
+            for (let i = 0; i < total; i++) {
+              dist[i] /= maxD;
+            }
+
+            dataRef.current = { base, ns, vel, dist, cols, C };
+          };
+
+          const dispose = () => {
+            if (frameRef.current) {
+              cancelAnimationFrame(frameRef.current);
+            }
+            if (rendererRef.current) {
+              rendererRef.current.dispose();
+            }
+            if (meshRef.current) {
+              meshRef.current.geometry.dispose();
+              meshRef.current.material.dispose();
+            }
+          };
+
+          const updateSize = () => {
+            const renderer = rendererRef.current;
+            const camera = cameraRef.current;
+            if (!renderer || !camera) return;
+            const width = canvas.clientWidth || window.innerWidth;
+            const height = canvas.clientHeight || window.innerHeight;
+            renderer.setSize(width, height, false);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+          };
+
+          const animate = () => {
+            const renderer = rendererRef.current;
+            const scene = sceneRef.current;
+            const camera = cameraRef.current;
+            const mesh = meshRef.current;
+            const data = dataRef.current;
+            if (!renderer || !scene || !camera || !mesh || !data) return;
+
+            const { base, ns, vel, dist, cols, C } = data;
+            const total = dist.length;
+            const dm = new THREE.Object3D();
+            const tc = new THREE.Color();
+            let time = 0;
+            let lastT = performance.now();
+
+            const loop = () => {
+              frameRef.current = requestAnimationFrame(loop);
+              const now = performance.now();
+              const dt = Math.min((now - lastT) / 1000, 0.05);
+              lastT = now;
+              time += dt;
+
+              const introP = Math.min(1, time / 2.2) * 0.42;
+              const scrollP = hasScrolledRef.current
+                ? scrollRef.current
+                : Math.max(scrollRef.current, introP);
+
+              for (let i = 0; i < total; i++) {
+                const i3 = i * 3;
+                const bx = base[i3];
+                const by = base[i3 + 1];
+                const bz = base[i3 + 2];
+                const d = dist[i];
+                const nx = ns[i3];
+                const ny = ns[i3 + 1];
+                const nz = ns[i3 + 2];
+                let px;
+                let py;
+                let pz;
+                let sc = 1;
+                let cm = 0;
+                let rx = 0;
+                let ry = 0;
+                let rz = 0;
+
+                if (scrollP < 0.33) {
+                  const t1 = scrollP / 0.33;
+                  const amp = 0.001 + t1 * 0.003;
+                  px = bx + Math.sin(time * 2.5 + nx * 5) * amp;
+                  py = by + Math.sin(time * 2.2 + ny * 4) * amp;
+                  pz = bz + Math.sin(time * 2.8 + nz * 6) * amp;
+                  rx = Math.sin(time * 0.3 + nx) * 0.002 * t1;
+                  ry = Math.sin(time * 0.25 + ny) * 0.002 * t1;
+                  cm = d * 0.15;
+                } else if (scrollP < 0.66) {
+                  const p2 = (scrollP - 0.33) / 0.33;
+                  const threshold = p2 * 1.3;
+                  if (d > 1 - threshold) {
+                    const da = Math.pow(
+                      Math.min(1, (d - (1 - threshold)) / Math.max(threshold, 0.001)),
+                      0.65
+                    );
+                    const drift = da * (0.6 + p2 * 4.0);
+                    const len = Math.sqrt(bx * bx + by * by + bz * bz) + 0.01;
+                    px = bx + (bx / len) * drift + Math.sin(time + nx) * drift * 0.15;
+                    py = by + (by / len) * drift + Math.sin(time * 0.8 + ny) * drift * 0.15 - drift * 0.1;
+                    pz = bz + (bz / len) * drift + Math.sin(time * 1.3 + nz) * drift * 0.1;
+                    rx = time * (nx % 2 - 1) * da * 0.6;
+                    ry = time * (ny % 2 - 1) * da * 0.5;
+                    rz = time * (nz % 2 - 1) * da * 0.4;
+                    sc = Math.max(0.4, 1 - da * 0.5);
+                    cm = 0.15 + da * 0.55;
+                  } else {
+                    const j = p2 * 0.04;
+                    px = bx + Math.sin(time * 2 + nx) * j;
+                    py = by + Math.sin(time * 1.7 + ny) * j;
+                    pz = bz + Math.sin(time * 2.3 + nz) * j;
+                    rx = Math.sin(time * 0.8 + nx) * p2 * 0.06;
+                    ry = Math.sin(time * 0.7 + ny) * p2 * 0.06;
+                    cm = d * 0.1 + p2 * 0.12;
+                  }
+                } else {
+                  const p3 = (scrollP - 0.66) / 0.34;
+                  const ep = 1 - (1 - p3) * (1 - p3);
+                  const str = ep * 5.0;
+                  const len = Math.sqrt(bx * bx + by * by + bz * bz) + 0.01;
+                  const startDrift = d * 1.0;
+                  const sx = bx + (bx / len) * startDrift;
+                  const sy = by + (by / len) * startDrift;
+                  const sz = bz + (bz / len) * startDrift;
+
+                  px = sx + vel[i3] * str + Math.sin(time * 0.7 + nx) * ep * 0.3;
+                  py = sy + vel[i3 + 1] * str - ep * 0.8 + Math.sin(time * 0.5 + ny) * ep * 0.25;
+                  pz = sz + vel[i3 + 2] * str + Math.sin(time * 0.9 + nz) * ep * 0.2;
+                  rx = time * (nx % 3 - 1.5);
+                  ry = time * (ny % 3 - 1.5) * 0.8;
+                  rz = time * (nz % 3 - 1.5) * 0.9;
+                  sc = Math.max(0.15, 1 - ep * 0.7);
+                  cm = 0.2 + ep * 0.8;
+                }
+
+                dm.position.set(px, py, pz);
+                dm.rotation.set(rx, ry, rz);
+                const wobble = 0.02 * Math.sin(time * 1.2 + nx);
+                dm.scale.setScalar(sc * (1 + wobble));
+                dm.updateMatrix();
+                mesh.setMatrixAt(i, dm.matrix);
+
+                tc.copy(C.core).lerp(C.dark, cm);
+                tc.r = Math.min(1, tc.r + Math.sin(nx * 3 + time * 0.4) * 0.03);
+                cols[i3] = tc.r;
+                cols[i3 + 1] = tc.g;
+                cols[i3 + 2] = tc.b;
+              }
+
+              mesh.instanceMatrix.needsUpdate = true;
+              if (!mesh.instanceColor) {
+                mesh.instanceColor = new THREE.InstancedBufferAttribute(cols, 3);
+              } else {
+                mesh.instanceColor.array = cols;
+                mesh.instanceColor.needsUpdate = true;
+              }
+
+              const ang = scrollP * Math.PI * 0.4 - 0.2;
+              const rad = 9.2 - scrollP * 1.3;
+              camera.position.set(Math.sin(ang) * rad, 0.4 + scrollP * 1.2, Math.cos(ang) * rad);
+              camera.lookAt(1.6, scrollP * 0.25 + 0.15, 0);
+
+              renderer.render(scene, camera);
+            };
+
+            loop();
+          };
+
+          init();
+          updateSize();
+
+          if (!prefersReducedMotion) {
+            animate();
+          }
+
+          let rafId = null;
+          const onScroll = () => {
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+              rafId = null;
+              const scrollRange = Math.max(
+                1,
+                document.documentElement.scrollHeight - window.innerHeight
+              );
+              const scrollP = Math.min(1, Math.max(0, window.scrollY / scrollRange));
+              scrollRef.current = scrollP;
+              setProgress(scrollP);
+              setPhase(
+                scrollP < 0.33
+                  ? "I — Formation"
+                  : scrollP < 0.66
+                    ? "II — Dissolution"
+                    : "III — Entropy"
+              );
+              if (scrollP > 0.01) {
+                hasScrolledRef.current = true;
+              }
+            });
+          };
+
+          const onResize = () => {
+            dispose();
+            init();
+            updateSize();
+            if (!prefersReducedMotion) {
+              animate();
+            }
+          };
+
+          window.addEventListener('scroll', onScroll, { passive: true });
+          window.addEventListener('resize', onResize);
+          onScroll();
+          return () => {
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('scroll', onScroll);
+            dispose();
+          };
+        }, []);
+
+        const pi = progress < 0.33 ? 0 : progress < 0.66 ? 1 : 2;
+
+        return (
+          <div className="particle-cube" aria-hidden="true">
+            <canvas ref={canvasRef}></canvas>
+            <div className="cube-ui">
+              <div className="cube-phase">{phase}</div>
+              <div className="cube-progress">
+                <div className="cube-progress-fill" style={{ height: `${progress * 100}%` }}></div>
+                <div className="cube-dots">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className={`cube-dot ${i <= pi ? 'active' : ''}`}></div>
+                  ))}
+                </div>
+              </div>
+              <div className={`cube-scroll-hint ${progress > 0.05 ? 'hidden' : ''}`}>
+                <span>Scroll</span>
+                <div className="cube-scroll-arrow"></div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const App = () => {
+        return (
+          <>
+            <div className="noise"></div>
+
+            <ParticleCubeBackground />
+
+            <main className="poster scroll-sections">
+              <section className="hero formation" id="top">
+                <div className="poster-grid">
+                  <div className="poster-title">
+                    <p className="eyebrow">Venture • Research • Conviction</p>
+                    <h1>
+                      <span className="accent">Formless</span>
+                      Capital
+                    </h1>
+                  </div>
+
+                  <div className="keyword-grid formation-keywords">
+                    <span>Tokenomics</span>
+                    <span>Supply architecture</span>
+                    <span>On-chain intelligence</span>
+                    <span>Infrastructure</span>
+                    <span>DeFi primitives</span>
+                    <span>Governance</span>
+                    <span>Conviction</span>
+                    <span>Seed to Series A</span>
+                  </div>
+                </div>
+
+                <svg className="poster-lines" viewBox="0 0 1200 900" aria-hidden="true">
+                  <path
+                    d="M80 220 C240 150 360 260 520 230"
+                    stroke="#1E5BFF"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                  <path
+                    d="M740 120 C880 170 1040 140 1140 70"
+                    stroke="#1E5BFF"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                  <path
+                    d="M120 760 C260 700 380 720 520 790"
+                    stroke="#1E5BFF"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                  <path
+                    d="M680 720 C820 650 980 660 1120 740"
+                    stroke="#1E5BFF"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                </svg>
+
+                <div className="glass-cubes" aria-hidden="true">
+                  <div className="glass-cube cube-a"></div>
+                  <div className="glass-cube cube-b"></div>
+                </div>
+
+                <div className="poster-type-bg" aria-hidden="true">
+                  <span>Formless</span>
+                  <span>Capital</span>
+                  <span>Venture</span>
+                  <span>Research</span>
+                </div>
+              </section>
+
+              <section id="mission" className="section poster-block content-section align-left">
+                <div className="content-card">
+                  <p className="section-label">Mission</p>
+                  <h2>Back the builders of digital finance.</h2>
+                  <p>
+                    Formless Capital backs founders building the infrastructure and
+                    applications that will define the next era of digital finance. We lead
+                    and co-lead early-stage rounds in protocols where our proprietary
+                    research gives us — and our founders — a structural advantage.
+                  </p>
+                  <p>
+                    We are not passive capital. Every investment is underwritten by the
+                    same deep fundamental research and on-chain intelligence infrastructure
+                    that powers our broader firm. Our founders get a partner who
+                    understands their tokenomics, their supply dynamics, and their
+                    competitive positioning at a level most investors never reach.
+                  </p>
+                </div>
+              </section>
+
+              <section id="thesis" className="section poster-block content-section align-right">
+                <div className="content-card">
+                  <p className="section-label">Thesis</p>
+                  <h2>Three convictions.</h2>
+                  <div className="content-stack">
+                    <div>
+                      <h3>On-chain economies are real economies.</h3>
+                      <p>
+                        Protocols generate revenue, manage treasuries, govern resource
+                        allocation, and compete for users and capital. The best
+                        opportunities come from analyzing these economies with the same
+                        rigor applied to traditional markets — but with the transparency
+                        advantage that blockchains uniquely provide.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Supply architecture determines outcomes.</h3>
+                      <p>
+                        The most overlooked variable in digital asset investing is supply
+                        design: emission schedules, vesting structures, staking incentives,
+                        governance-controlled treasury flows. Projects with well-designed
+                        supply architecture compound value for holders. Projects with poor
+                        supply design dilute it. We model this before we invest.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Infrastructure compounds.</h3>
+                      <p>
+                        We focus on foundational layers — protocols, tooling, and
+                        middleware — where network effects and switching costs create
+                        durable competitive advantages. Applications built on strong
+                        infrastructure inherit its moat. We want to own the infrastructure.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section id="invest" className="section poster-block content-section align-left">
+                <div className="content-card">
+                  <p className="section-label">What We Invest In</p>
+                  <h2>Stage, checks, sectors.</h2>
+                  <div className="content-stack">
+                    <div>
+                      <h3>Stage</h3>
+                      <p>
+                        Pre-seed through Series A. We are most active at seed stage where
+                        our research infrastructure provides the highest differentiation.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Check size</h3>
+                      <p>
+                        $250K – $2M initial. We reserve capital for follow-on in breakout
+                        portfolio companies.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="content-stack">
+                    <div>
+                      <h3>Core Infrastructure</h3>
+                      <p>
+                        Layer 1 and Layer 2 protocols, consensus mechanisms, execution
+                        environments, cross-chain interoperability, and validator
+                        infrastructure.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>DeFi Primitives</h3>
+                      <p>
+                        Lending, trading, derivatives, structured products, and yield
+                        infrastructure. We look for protocol designs with defensible
+                        liquidity moats and sustainable unit economics.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>On-Chain Intelligence</h3>
+                      <p>
+                        Analytics, attribution, compliance tooling, and data infrastructure
+                        that makes blockchain data legible and actionable. This is a sector
+                        we know intimately because we build and use these tools ourselves.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Tokenomics Design</h3>
+                      <p>
+                        Projects rethinking how tokens capture and distribute value. We
+                        have strong views on what works and actively advise portfolio
+                        companies on supply architecture.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section id="help" className="section poster-block content-section align-right">
+                <div className="content-card">
+                  <p className="section-label">How We Help</p>
+                  <h2>Capital is the starting point.</h2>
+                  <div className="content-stack">
+                    <div>
+                      <h3>Tokenomics Advisory</h3>
+                      <p>
+                        We model your supply dynamics before you go to market — emission
+                        curves, vesting structures, staking parameters, governance-controlled
+                        flows. We help you design token economies that align incentives and
+                        avoid the structural traps that have hurt otherwise strong projects.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>On-Chain Due Diligence</h3>
+                      <p>
+                        Our proprietary entity attribution database and supply modeling
+                        frameworks are available to portfolio companies. Whether you need
+                        to understand your holder base, analyze competitive supply dynamics,
+                        or prepare for a token generation event, we bring infrastructure
+                        that doesn't exist elsewhere.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Ecosystem Network</h3>
+                      <p>
+                        We maintain deep relationships across Layer 1 ecosystems, DeFi
+                        protocols, institutional allocators, and exchange partners.
+                        Portfolio companies get introductions that accelerate go-to-market
+                        and liquidity strategy.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Governance Strategy</h3>
+                      <p>
+                        As protocols mature, governance becomes the primary mechanism for
+                        value creation and capture. We advise on governance framework
+                        design, proposal strategy, and stakeholder alignment from day one.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section id="contact" className="section poster-block content-section align-center">
+                <div className="content-card">
+                  <div className="contact">
+                    <div>
+                      <p className="section-label">Contact</p>
+                      <h2>Build with us</h2>
+                      <p>
+                        We review every inbound. If you’re building in our focus areas, we
+                        want to hear from you.
+                      </p>
+                    </div>
+                    <div className="contact-card">
+                      <p>For founders</p>
+                      <a href="mailto:info@formless.capital">info@formless.capital</a>
+                      <p>For co-investors</p>
+                      <a href="mailto:investors@formless.capital">investors@formless.capital</a>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </main>
+
+            <footer className="footer">
+              <span>Formless Capital</span>
+              <span>Formless Capital Ventures.</span>
+              <span>© 2026</span>
+            </footer>
+          </>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>

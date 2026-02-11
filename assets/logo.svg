@@ -1,0 +1,25 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glassA" x1="26" y1="40" x2="140" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="0.55" stop-color="#DDE6FF" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#9FB7FF" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="glassB" x1="20" y1="30" x2="120" y2="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#1E5BFF" stop-opacity="0.25"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="24" y1="32" x2="136" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#1E5BFF" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="40" fill="none"/>
+  <g opacity="0.98">
+    <path d="M36 48C54 28 108 30 124 64C140 98 96 132 62 120C34 108 18 72 36 48Z" fill="url(#glassA)"/>
+    <path d="M30 66C44 36 106 36 126 66C146 96 104 134 66 122C36 112 20 88 30 66Z" fill="url(#glassB)"/>
+    <path d="M46 60C60 42 100 44 112 68C124 92 94 118 66 110C44 104 34 80 46 60Z" fill="#0B0B0C" opacity="0.18"/>
+    <path d="M36 48C54 28 108 30 124 64C140 98 96 132 62 120C34 108 18 72 36 48Z" stroke="url(#edge)" stroke-width="2"/>
+  </g>
+  <circle cx="122" cy="42" r="7" fill="#1E5BFF"/>
+</svg>
